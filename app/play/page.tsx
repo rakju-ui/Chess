@@ -1,7 +1,4 @@
-The code updates the handleGameStateChange function to synchronize the game state with Firebase for online games and introduces a handleMove function to restrict moves to the player's turn in online mode.
-```
 
-```replit_final_file
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
@@ -11,7 +8,7 @@ import ChessBoard from "@/components/chess-board"
 import GameTimer from "@/components/game-timer"
 import ThemeSwitcher from "@/components/theme-switcher"
 import { useTheme } from "@/lib/theme-context"
-import type { GameState } from "@/lib/types"
+import type { GameState, Position } from "@/lib/types"
 import { createInitialGameState, makeMove, getGameResult } from "@/lib/chess-logic"
 import { getBestMove, getSmartRandomMove } from "@/lib/chess-engine"
 
@@ -21,7 +18,7 @@ export default function PlayPage() {
   const { theme } = useTheme()
   const mode = searchParams.get("mode") || "pvp"
   const gameId = searchParams.get("gameId")
-  const playerColor = searchParams.get("color")
+  const playerColor = searchParams.get("color") as "white" | "black"
 
   const urlDifficulty = searchParams.get("difficulty") as "easy" | "medium" | "hard" | null
 
@@ -31,6 +28,48 @@ export default function PlayPage() {
   const [gameResult, setGameResult] = useState<string | null>(null)
   const [botDifficulty, setBotDifficulty] = useState<"easy" | "medium" | "hard">(urlDifficulty || "medium")
   const [botThinking, setBotThinking] = useState(false)
+  const [isMyTurn, setIsMyTurn] = useState(true)
+
+  // Firebase subscription for online games
+  useEffect(() => {
+    if (mode === "online" && gameId) {
+      let unsubscribe: (() => void) | null = null
+
+      const setupFirebaseSubscription = async () => {
+        try {
+          const { subscribeToGame, joinFirebaseGame } = await import('@/lib/firebase-game')
+          
+          // Join the game if we're the second player
+          if (playerColor === "black") {
+            const gameData = await joinFirebaseGame(gameId, "black")
+            if (gameData) {
+              setGameState(gameData)
+            }
+          }
+
+          // Subscribe to game updates
+          unsubscribe = subscribeToGame(gameId, (updatedGameState) => {
+            setGameState(updatedGameState)
+            
+            // Check if it's our turn
+            const ourTurn = (playerColor === "white" && updatedGameState.currentPlayer === "white") ||
+                           (playerColor === "black" && updatedGameState.currentPlayer === "black")
+            setIsMyTurn(ourTurn)
+          })
+        } catch (error) {
+          console.error('Error setting up Firebase subscription:', error)
+        }
+      }
+
+      setupFirebaseSubscription()
+
+      return () => {
+        if (unsubscribe) {
+          unsubscribe()
+        }
+      }
+    }
+  }, [mode, gameId, playerColor])
 
   // Countdown timer
   useEffect(() => {
@@ -97,7 +136,7 @@ export default function PlayPage() {
       if (botMove) {
         const newGameState = makeMove(gameState, botMove.from, botMove.to)
         if (newGameState) {
-          setGameState(newGameState)
+          handleGameStateChange(newGameState)
           console.log("🤖 Bot move executed successfully")
         }
       } else {
@@ -110,7 +149,7 @@ export default function PlayPage() {
       if (fallbackMove) {
         const newGameState = makeMove(gameState, fallbackMove.from, fallbackMove.to)
         if (newGameState) {
-          setGameState(newGameState)
+          handleGameStateChange(newGameState)
         }
       }
     } finally {
@@ -148,8 +187,9 @@ export default function PlayPage() {
   const handleMove = (from: Position, to: Position) => {
     // Only allow moves if it's the player's turn in online mode
     if (mode === "online" && !isMyTurn) {
-      return
+      return false
     }
+    return true
   }
 
   const handleTimeUp = () => {
@@ -273,6 +313,11 @@ export default function PlayPage() {
               ) : (
                 "PlayerBlack's turn"
               )}
+              {mode === "online" && (
+                <div className="text-sm opacity-70 mt-1">
+                  {isMyTurn ? "Your turn" : "Waiting for opponent"}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -281,7 +326,11 @@ export default function PlayPage() {
         <div className="flex flex-col md:flex-row justify-center items-center gap-8">
           {/* Chess Board */}
           <div className="order-1">
-            <ChessBoard gameState={gameState} onGameStateChange={handleGameStateChange} />
+            <ChessBoard 
+              gameState={gameState} 
+              onGameStateChange={handleGameStateChange}
+              canMove={mode !== "online" || isMyTurn}
+            />
           </div>
 
           {/* Timers - Only show for PvP and Online modes, hidden for bot mode */}

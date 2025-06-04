@@ -10,16 +10,17 @@ interface ChessBoardProps {
   gameState: GameState
   onGameStateChange: (gameState: GameState) => void
   onMove?: (from: Position, to: Position) => void
+  canMove?: boolean
 }
 
-export default function ChessBoard({ gameState, onGameStateChange, onMove }: ChessBoardProps) {
+export default function ChessBoard({ gameState, onGameStateChange, onMove, canMove = true }: ChessBoardProps) {
   const [selectedSquare, setSelectedSquare] = useState<Position | null>(null)
   const [validMoves, setValidMoves] = useState<Position[]>([])
   const { colors } = useTheme()
 
   const handleSquareClick = (row: number, col: number) => {
     // Don't allow moves if game is over
-    if (gameState.isCheckmate) return
+    if (gameState.isCheckmate || !canMove) return
 
     const position = { row, col }
     const piece = gameState.board[row][col]
@@ -99,7 +100,7 @@ export default function ChessBoard({ gameState, onGameStateChange, onMove }: Che
         )}
       </div>
 
-      
+
     </div>
   )
 }
