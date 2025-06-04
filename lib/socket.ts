@@ -5,10 +5,21 @@ let socket: Socket | null = null;
 
 export const initSocket = () => {
   if (!socket) {
-    // For Replit environment, use the current domain with port 5000
-    const serverUrl = typeof window !== 'undefined' 
-      ? `${window.location.protocol}//${window.location.hostname.replace(/^\d+-/, '5000-')}`
-      : 'http://localhost:5000';
+    // For Replit environment, construct the correct URL
+    let serverUrl;
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      // Check if we're in a Replit environment
+      if (hostname.includes('.replit.dev')) {
+        // Replace the port number in the hostname for Replit
+        serverUrl = `${window.location.protocol}//${hostname.replace(/^\d+/, '5000')}`;
+      } else {
+        // Local development
+        serverUrl = `${window.location.protocol}//${hostname}:5000`;
+      }
+    } else {
+      serverUrl = 'http://localhost:5000';
+    }
     
     socket = io(serverUrl, {
       transports: ['websocket', 'polling'],
