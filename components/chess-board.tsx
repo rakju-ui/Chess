@@ -64,8 +64,8 @@ export default function ChessBoard({ gameState, onGameStateChange, onMove }: Che
     const isLight = (row + col) % 2 === 0
     const piece = gameState.board[row][col]
 
-    // Highlight king in red if in check
-    if (piece && piece.type === "king" && piece.color === gameState.currentPlayer && gameState.isCheck) {
+    // Highlight king in red if in check (but not if game is over)
+    if (piece && piece.type === "king" && piece.color === gameState.currentPlayer && gameState.isCheck && !gameState.isCheckmate) {
       return colors.check
     }
 
