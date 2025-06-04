@@ -67,16 +67,25 @@ export async function joinFirebaseGame(gameId: string, playerColor: 'white' | 'b
 export async function updateFirebaseGame(gameId: string, gameState: GameState): Promise<void> {
   const gameRef = doc(db, 'games', gameId)
   
-  await updateDoc(gameRef, {
+  // Filter out undefined values to prevent Firebase errors
+  const updateData: any = {
     board: JSON.stringify(gameState.board), // Serialize the 2D array
     currentPlayer: gameState.currentPlayer,
-    moves: gameState.moves,
-    isCheck: gameState.isCheck,
-    isCheckmate: gameState.isCheckmate,
-    whiteTime: gameState.whiteTime,
-    blackTime: gameState.blackTime,
+    moves: gameState.moves || [],
+    isCheck: gameState.isCheck || false,
+    isCheckmate: gameState.isCheckmate || false,
     lastMoveAt: Timestamp.now()
-  })
+  }
+  
+  // Only include time fields if they are defined
+  if (gameState.whiteTime !== undefined) {
+    updateData.whiteTime = gameState.whiteTime
+  }
+  if (gameState.blackTime !== undefined) {
+    updateData.blackTime = gameState.blackTime
+  }
+  
+  await updateDoc(gameRef, updateData)
 }
 
 // Subscribe to game updates
