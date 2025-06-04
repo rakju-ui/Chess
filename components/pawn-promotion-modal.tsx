@@ -17,9 +17,9 @@ export default function PawnPromotionModal({ isOpen, color, onPromotion }: PawnP
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 shadow-xl">
-        <h3 className="text-lg font-semibold mb-4 text-center text-black">
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+      <div className="bg-gray-800 rounded-lg p-6 shadow-xl border-2 border-silver">
+        <h3 className="text-lg font-semibold mb-4 text-center text-silver">
           Choose promotion piece:
         </h3>
         <div className="flex gap-4">
@@ -27,7 +27,7 @@ export default function PawnPromotionModal({ isOpen, color, onPromotion }: PawnP
             <button
               key={pieceType}
               onClick={() => onPromotion(pieceType)}
-              className="w-16 h-16 flex items-center justify-center border-2 border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
+              className="w-16 h-16 flex items-center justify-center border-2 border-gray-500 rounded-lg hover:border-silver hover:bg-gray-700 transition-colors bg-gray-600"
             >
               <ChessPieceComponent 
                 piece={{ type: pieceType, color }} 
