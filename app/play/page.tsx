@@ -180,7 +180,7 @@ export default function PlayPage() {
   }
 
   return (
-    <div className={`min-h-screen ${getThemeClass()} p-8`}>
+    <div className={`min-h-screen ${getThemeClass()} p-4 md:p-8`}>
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
@@ -242,14 +242,16 @@ export default function PlayPage() {
           </div>
         )}
 
-        {/* Game Area */}
-        <div className="flex justify-center items-center gap-8">
+        {/* Game Area - Responsive Layout */}
+        <div className="flex flex-col md:flex-row justify-center items-center gap-8">
           {/* Chess Board */}
-          <ChessBoard gameState={gameState} onGameStateChange={handleGameStateChange} />
+          <div className="order-1">
+            <ChessBoard gameState={gameState} onGameStateChange={handleGameStateChange} />
+          </div>
 
           {/* Timers - Only show for PvP and Online modes, hidden for bot mode */}
           {mode !== "bot" && (
-            <div className="flex flex-col gap-4">
+            <div className="order-2 md:order-3 flex flex-row md:flex-col gap-4 justify-center">
               <GameTimer
                 time={gameState.blackTime}
                 isActive={gameState.currentPlayer === "black" && !gameState.isCheckmate}

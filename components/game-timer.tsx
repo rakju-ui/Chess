@@ -41,9 +41,9 @@ export default function GameTimer({ time, isActive, onTimeUp, label }: GameTimer
   const isLowTime = currentTime < 60000 // Less than 1 minute
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm rounded-lg p-4 min-w-[120px] shadow-md border border-gray-200">
-      <div className="text-sm font-medium text-gray-700 mb-1">{label}</div>
-      <div className={`text-xl font-bold ${isLowTime ? "text-red-600" : "text-gray-900"}`}>
+    <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3 md:p-4 min-w-[100px] md:min-w-[120px] shadow-md border border-gray-200">
+      <div className="text-xs md:text-sm font-medium text-gray-700 mb-1">{label}</div>
+      <div className={`text-lg md:text-xl font-bold ${isLowTime ? "text-red-600" : "text-gray-900"}`}>
         {formatTime(currentTime)}
       </div>
     </div>
