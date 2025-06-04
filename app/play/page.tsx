@@ -1,3 +1,7 @@
+The code updates the handleGameStateChange function to synchronize the game state with Firebase for online games and introduces a handleMove function to restrict moves to the player's turn in online mode.
+```
+
+```replit_final_file
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
@@ -127,11 +131,24 @@ export default function PlayPage() {
     }
   }, [gameStarted, mode, gameState.currentPlayer, gameState.isCheckmate, makeBotMove, botThinking])
 
-  const handleGameStateChange = (newGameState: GameState) => {
+  const handleGameStateChange = async (newGameState: GameState) => {
     setGameState(newGameState)
 
+    // Update Firebase for online games
     if (mode === "online" && gameId) {
-      console.log("Syncing game state to Firebase:", gameId)
+      try {
+        const { updateFirebaseGame } = await import('@/lib/firebase-game')
+        await updateFirebaseGame(gameId, newGameState)
+      } catch (error) {
+        console.error('Error updating Firebase game:', error)
+      }
+    }
+  }
+
+  const handleMove = (from: Position, to: Position) => {
+    // Only allow moves if it's the player's turn in online mode
+    if (mode === "online" && !isMyTurn) {
+      return
     }
   }
 
