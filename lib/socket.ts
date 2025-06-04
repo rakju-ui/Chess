@@ -5,14 +5,13 @@ let socket: Socket | null = null;
 
 export const initSocket = () => {
   if (!socket) {
-    // For Replit environment, construct the correct URL
+    // For Replit environment, use the external port 5000
     let serverUrl;
     if (typeof window !== 'undefined') {
       const hostname = window.location.hostname;
-      // Check if we're in a Replit environment
       if (hostname.includes('.replit.dev')) {
-        // Replace the port number in the hostname for Replit
-        serverUrl = `${window.location.protocol}//${hostname.replace(/^\d+/, '5000')}`;
+        // In Replit, use the external port directly
+        serverUrl = `${window.location.protocol}//${hostname}:5000`;
       } else {
         // Local development
         serverUrl = `${window.location.protocol}//${hostname}:5000`;
@@ -21,12 +20,27 @@ export const initSocket = () => {
       serverUrl = 'http://localhost:5000';
     }
     
+    console.log('Connecting to socket server at:', serverUrl);
+    
     socket = io(serverUrl, {
       transports: ['websocket', 'polling'],
-      upgrade: true,
-      rememberUpgrade: true,
-      timeout: 20000,
-      forceNew: true
+      autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      timeout: 20000
+    });
+
+    socket.on('connect', () => {
+      console.log('✅ Connected to socket server');
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('❌ Socket connection error:', error);
+    });
+
+    socket.on('disconnect', (reason) => {
+      console.log('🔌 Disconnected from socket server:', reason);
     });
   }
   return socket;

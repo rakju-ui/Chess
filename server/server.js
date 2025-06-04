@@ -13,8 +13,22 @@ const io = socketIo(server, {
   }
 });
 
-app.use(cors());
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST"],
+  credentials: true
+}));
 app.use(express.json());
+
+// Add a root route for the server
+app.get('/', (req, res) => {
+  res.json({ message: 'Chess Server is running', status: 'OK' });
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
 
 // Store active games
 const games = new Map();
