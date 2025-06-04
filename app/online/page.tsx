@@ -16,22 +16,10 @@ export default function OnlineSetupPage() {
     // Generate a random game ID
     const newGameId = Math.random().toString(36).substring(2, 8).toUpperCase()
 
-    try {
-      // Import Firebase functions dynamically to avoid SSR issues
-      const { createFirebaseGame } = await import('@/lib/firebase-game')
-      const { createInitialGameState } = await import('@/lib/chess-logic')
-      
-      const initialState = createInitialGameState('online')
-      initialState.gameId = newGameId
-      
-      await createFirebaseGame(newGameId, initialState)
+    // In a real implementation, you would create the game in Firebase here
+    setTimeout(() => {
       router.push(`/play?mode=online&gameId=${newGameId}&color=white`)
-    } catch (error) {
-      console.error('Error creating game:', error)
-      alert('Failed to create game. Please check your Firebase configuration.')
-    } finally {
-      setIsCreating(false)
-    }
+    }, 1000)
   }
 
   const joinGame = () => {
