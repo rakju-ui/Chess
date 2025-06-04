@@ -1,0 +1,49 @@
+Error: ./lib/firebase-game.ts
+Error:   [31m×[0m Return statement is not allowed here
+    ╭─[[36;1;4m/home/runner/workspace/lib/firebase-game.ts[0m:1:1]
+ [2m 1[0m │ [35;1m╭[0m[35;1m─[0m[35;1m▶[0m return onSnapshot(gameRef, (doc) => {
+ [2m 2[0m │ [35;1m│[0m       if (doc.exists()) {
+ [2m 3[0m │ [35;1m│[0m         const data = doc.data()
+ [2m 4[0m │ [35;1m│[0m         // Parse the serialized board data
+ [2m 5[0m │ [35;1m│[0m         const gameState: GameState = {
+ [2m 6[0m │ [35;1m│[0m           ...data,
+ [2m 7[0m │ [35;1m│[0m           board: JSON.parse(data.board), // Deserialize the board
+ [2m 8[0m │ [35;1m│[0m         } as GameState
+ [2m 9[0m │ [35;1m│[0m         callback(gameState)
+ [2m10[0m │ [35;1m│[0m       }
+ [2m11[0m │ [35;1m╰[0m[35;1m─[0m[35;1m▶[0m   })
+ [2m12[0m │     }
+ [2m13[0m │     
+ [2m14[0m │     // Alias for backward compatibility
+    ╰────
+  [31m×[0m Expression expected
+    ╭─[[36;1;4m/home/runner/workspace/lib/firebase-game.ts[0m:12:1]
+ [2m 9[0m │       callback(gameState)
+ [2m10[0m │     }
+ [2m11[0m │   })
+ [2m12[0m │ }
+    · [35;1m─[0m
+ [2m13[0m │ 
+ [2m14[0m │ // Alias for backward compatibility
+ [2m15[0m │ export const subscribeToGameUpdates = subscribeToFirebaseGame
+    ╰────
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./lib/firebase-game.ts
+./app/play/page.tsx
+    at BuildError (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.2.4_react-dom@19.0.0_react@19.0.0__react@19.0.0/node_modules/next/dist/client/components/react-dev-overlay/ui/container/build-error.js:43:41)
+    at react-stack-bottom-frame (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.2.4_react-dom@19.0.0_react@19.0.0__react@19.0.0/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:23950:20)
+    at renderWithHooksAgain (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.2.4_react-dom@19.0.0_react@19.0.0__react@19.0.0/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:5179:20)
+    at renderWithHooks (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.2.4_react-dom@19.0.0_react@19.0.0__react@19.0.0/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:5091:22)
+    at updateFunctionComponent (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.2.4_react-dom@19.0.0_react@19.0.0__react@19.0.0/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:8328:19)
+    at beginWork (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.2.4_react-dom@19.0.0_react@19.0.0__react@19.0.0/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:9945:18)
+    at runWithFiberInDEV (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.2.4_react-dom@19.0.0_react@19.0.0__react@19.0.0/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:1511:30)
+    at performUnitOfWork (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.2.4_react-dom@19.0.0_react@19.0.0__react@19.0.0/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:15120:22)
+    at workLoopSync (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.2.4_react-dom@19.0.0_react@19.0.0__react@19.0.0/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14944:41)
+    at renderRootSync (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.2.4_react-dom@19.0.0_react@19.0.0__react@19.0.0/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14924:11)
+    at performWorkOnRoot (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.2.4_react-dom@19.0.0_react@19.0.0__react@19.0.0/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:14411:13)
+    at performWorkOnRootViaSchedulerTask (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.2.4_react-dom@19.0.0_react@19.0.0__react@19.0.0/node_modules/next/dist/compiled/react-dom/cjs/react-dom-client.development.js:16275:7)
+    at MessagePort.performWorkUntilDeadline (webpack-internal:///(app-pages-browser)/./node_modules/.pnpm/next@15.2.4_react-dom@19.0.0_react@19.0.0__react@19.0.0/node_modules/next/dist/compiled/scheduler/cjs/scheduler.development.js:45:48)
