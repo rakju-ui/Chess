@@ -1,368 +1,148 @@
+'use client'
 
-"use client"
-
-import { useState, useEffect, useCallback } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import ChessBoard from "@/components/chess-board"
-import GameTimer from "@/components/game-timer"
-import ThemeSwitcher from "@/components/theme-switcher"
-import { useTheme } from "@/lib/theme-context"
-import type { GameState, Position } from "@/lib/types"
-import { createInitialGameState, makeMove, getGameResult } from "@/lib/chess-logic"
-import { getBestMove, getSmartRandomMove } from "@/lib/chess-engine"
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
+import ChessBoard from '../../components/chess-board'
+import GameTimer from '../../components/game-timer'
+import { Button } from '../../components/ui/button'
+import type { GameState, Move, Position } from '../../lib/types'
+import { ChessPiece } from '../../lib/types'
+import { initializeChessBoard } from '../../lib/chess-logic'
+import { createFirebaseGame, joinFirebaseGame, updateFirebaseGame, subscribeToFirebaseGame } from '../../lib/firebase-game'
 
 export default function PlayPage() {
-  const router = useRouter()
   const searchParams = useSearchParams()
-  const { theme } = useTheme()
-  const mode = searchParams.get("mode") || "pvp"
-  const gameId = searchParams.get("gameId")
-  const playerColor = searchParams.get("color") as "white" | "black"
+  const mode = searchParams.get('mode') || 'local'
+  const gameId = searchParams.get('gameId')
+  const playerColor = searchParams.get('color') as 'white' | 'black' | null
 
-  const urlDifficulty = searchParams.get("difficulty") as "easy" | "medium" | "hard" | null
+  const [gameState, setGameState] = useState<GameState>({
+    board: initializeChessBoard(),
+    currentPlayer: 'white',
+    moves: [],
+    isCheck: false,
+    isCheckmate: false,
+    whiteTime: 600,
+    blackTime: 600,
+    gameMode: mode as 'local' | 'online'
+  })
 
-  const [countdown, setCountdown] = useState(5)
-  const [gameStarted, setGameStarted] = useState(false)
-  const [gameState, setGameState] = useState<GameState>(() => createInitialGameState(mode as "pvp" | "bot" | "online"))
-  const [gameResult, setGameResult] = useState<string | null>(null)
-  const [botDifficulty, setBotDifficulty] = useState<"easy" | "medium" | "hard">(urlDifficulty || "medium")
-  const [botThinking, setBotThinking] = useState(false)
-  const [isMyTurn, setIsMyTurn] = useState(true)
+  const [isOnlineGame, setIsOnlineGame] = useState(false)
+  const [myColor, setMyColor] = useState<'white' | 'black' | null>(null)
 
-  // Firebase subscription for online games
   useEffect(() => {
-    if (mode === "online" && gameId) {
-      let unsubscribe: (() => void) | null = null
+    if (mode === 'online' && gameId) {
+      setIsOnlineGame(true)
+      setMyColor(playerColor)
 
-      const setupFirebaseSubscription = async () => {
-        try {
-          const { subscribeToGame, joinFirebaseGame } = await import('@/lib/firebase-game')
-          
-          // Join the game if we're the second player
-          if (playerColor === "black") {
-            const gameData = await joinFirebaseGame(gameId, "black")
-            if (gameData) {
-              setGameState(gameData)
-            }
+      if (playerColor === 'white') {
+        // Create new game
+        createFirebaseGame(gameId, gameState).catch(console.error)
+      } else if (playerColor === 'black') {
+        // Join existing game
+        joinFirebaseGame(gameId, 'black').then(joinedGameState => {
+          if (joinedGameState) {
+            setGameState(joinedGameState)
           }
-
-          // Subscribe to game updates
-          unsubscribe = subscribeToGame(gameId, (updatedGameState) => {
-            setGameState(updatedGameState)
-            
-            // Check if it's our turn
-            const ourTurn = (playerColor === "white" && updatedGameState.currentPlayer === "white") ||
-                           (playerColor === "black" && updatedGameState.currentPlayer === "black")
-            setIsMyTurn(ourTurn)
-          })
-        } catch (error) {
-          console.error('Error setting up Firebase subscription:', error)
-        }
+        }).catch(console.error)
       }
 
-      setupFirebaseSubscription()
+      // Subscribe to game updates
+      const unsubscribe = subscribeToFirebaseGame(gameId, (updatedGameState) => {
+        setGameState(updatedGameState)
+      })
 
-      return () => {
-        if (unsubscribe) {
-          unsubscribe()
-        }
-      }
+      return () => unsubscribe()
     }
   }, [mode, gameId, playerColor])
 
-  // Countdown timer
-  useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
-      return () => clearTimeout(timer)
-    } else {
-      setGameStarted(true)
-    }
-  }, [countdown])
-
-  // Timer system - only runs for PvP and Online modes, not for bot mode
-  useEffect(() => {
-    if (!gameStarted || gameState.isCheckmate || mode === "bot") return
-
-    const interval = setInterval(() => {
-      setGameState((prev) => {
-        const newState = { ...prev }
-
-        // Only run timers for PvP/Online mode
-        if (prev.currentPlayer === "white") {
-          newState.whiteTime = Math.max(0, prev.whiteTime - 1000)
-        } else {
-          newState.blackTime = Math.max(0, prev.blackTime - 1000)
-        }
-
-        return newState
-      })
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [gameStarted, gameState.currentPlayer, gameState.isCheckmate, mode])
-
-  // Check for game end conditions
-  useEffect(() => {
-    const result = getGameResult(gameState)
-    if (result) {
-      setGameResult(result)
-    }
-  }, [gameState])
-
-  // Enhanced AI Bot logic
-  const makeBotMove = useCallback(async () => {
-    if (mode !== "bot" || gameState.currentPlayer !== "black" || gameState.isCheckmate) return
-
-    setBotThinking(true)
-
-    try {
-      console.log(`🤖 Chess Engine analyzing position at ${botDifficulty} difficulty...`)
-
-      // Add thinking delay for realism - no timer pressure in bot mode
-      await new Promise((resolve) => setTimeout(resolve, 800 + Math.random() * 1200))
-
-      let botMove = null
-
-      // Try the advanced engine first
-      try {
-        botMove = getBestMove(gameState, botDifficulty)
-      } catch (error) {
-        console.warn("🤖 Advanced engine failed, using fallback:", error)
-        botMove = getSmartRandomMove(gameState, botDifficulty)
-      }
-
-      if (botMove) {
-        const newGameState = makeMove(gameState, botMove.from, botMove.to)
-        if (newGameState) {
-          handleGameStateChange(newGameState)
-          console.log("🤖 Bot move executed successfully")
-        }
-      } else {
-        console.log("🤖 No valid moves available for bot")
-      }
-    } catch (error) {
-      console.error("🤖 Bot move failed:", error)
-      // Final fallback - try any random valid move
-      const fallbackMove = getSmartRandomMove(gameState, "easy")
-      if (fallbackMove) {
-        const newGameState = makeMove(gameState, fallbackMove.from, fallbackMove.to)
-        if (newGameState) {
-          handleGameStateChange(newGameState)
-        }
-      }
-    } finally {
-      setBotThinking(false)
-    }
-  }, [mode, gameState, botDifficulty])
-
-  useEffect(() => {
-    if (
-      gameStarted &&
-      mode === "bot" &&
-      gameState.currentPlayer === "black" &&
-      !gameState.isCheckmate &&
-      !botThinking
-    ) {
-      const timer = setTimeout(makeBotMove, 300)
-      return () => clearTimeout(timer)
-    }
-  }, [gameStarted, mode, gameState.currentPlayer, gameState.isCheckmate, makeBotMove, botThinking])
-
-  const handleGameStateChange = async (newGameState: GameState) => {
+  const handleGameStateChange = (newGameState: GameState) => {
     setGameState(newGameState)
 
-    // Update Firebase for online games
-    if (mode === "online" && gameId) {
-      try {
-        const { updateFirebaseGame } = await import('@/lib/firebase-game')
-        await updateFirebaseGame(gameId, newGameState)
-      } catch (error) {
+    if (isOnlineGame && gameId) {
+      updateFirebaseGame(gameId, newGameState).catch(error => {
         console.error('Error updating Firebase game:', error)
-      }
+      })
     }
   }
 
-  const handleMove = (from: Position, to: Position) => {
-    // Only allow moves if it's the player's turn in online mode
-    if (mode === "online" && !isMyTurn) {
+  const handleMove = (move: Move): boolean => {
+    // In online mode, only allow moves when it's the player's turn
+    if (isOnlineGame && myColor && gameState.currentPlayer !== myColor) {
       return false
     }
+
     return true
   }
 
-  const handleTimeUp = () => {
-    console.log("Time up!")
-    const result = getGameResult(gameState)
-    if (result) {
-      setGameResult(result)
+  const resetGame = () => {
+    const newGameState: GameState = {
+      board: initializeChessBoard(),
+      currentPlayer: 'white',
+      moves: [],
+      isCheck: false,
+      isCheckmate: false,
+      whiteTime: 600,
+      blackTime: 600,
+      gameMode: mode as 'local' | 'online'
     }
+    handleGameStateChange(newGameState)
   }
 
-  const handleNewGame = () => {
-    setGameState(createInitialGameState(mode as "pvp" | "bot" | "online"))
-    setGameResult(null)
-    setBotThinking(false)
-  }
-
-  const getThemeClass = () => {
-    switch (theme) {
-      case "ocean-breeze":
-        return "theme-ocean-breeze"
-      case "black-silver":
-        return "theme-black-silver"
-      case "forest-canopy":
-        return "theme-forest-canopy"
-      case "beige-brown":
-        return "theme-beige-brown"
-      default:
-        return "theme-black-silver"
+  const getGameStatus = () => {
+    if (gameState.isCheckmate) {
+      const winner = gameState.currentPlayer === 'white' ? 'Black' : 'White'
+      return `Checkmate! ${winner} wins!`
+    } else if (gameState.isCheck) {
+      return `${gameState.currentPlayer === 'white' ? 'White' : 'Black'} is in check!`
+    } else {
+      return `${gameState.currentPlayer === 'white' ? 'White' : 'Black'}'s turn`
     }
-  }
-
-  const getTextColor = () => {
-    return theme === "black-silver" ? "text-white" : "text-gray-800"
-  }
-
-  if (!gameStarted) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-6xl font-bold text-white mb-8">{countdown}</h1>
-          <p className="text-xl text-gray-300">Game starting...</p>
-        </div>
-      </div>
-    )
   }
 
   return (
-    <div className={`min-h-screen ${getThemeClass()} p-4 md:p-8`}>
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <Button
-            onClick={() => router.push("/modes")}
-            variant="ghost"
-            className={`${getTextColor()} hover:bg-white/20`}
-          >
-            ← Back
-          </Button>
-
-          <div className="flex items-center gap-4">
-            {gameResult && (
-              <Button onClick={handleNewGame} className="bg-green-600 hover:bg-green-700 text-white">
-                New Game
-              </Button>
-            )}
-            {mode === "bot" && (
-              <select
-                value={botDifficulty}
-                onChange={(e) => setBotDifficulty(e.target.value as "easy" | "medium" | "hard")}
-                className="bg-white/90 border border-gray-300 rounded-lg px-3 py-2 text-sm font-medium"
-                disabled={gameState.moves.length > 0}
-              >
-                <option value="easy">Easy Bot</option>
-                <option value="medium">Medium Bot</option>
-                <option value="hard">Hard Bot</option>
-              </select>
-            )}
-            <ThemeSwitcher />
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+      <div className="max-w-4xl w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <ChessBoard 
+            gameState={gameState} 
+            onGameStateChange={handleGameStateChange}
+            onMove={handleMove}
+          />
         </div>
 
-        {/* Game Result - Enhanced for all modes */}
-        {gameResult && (
-          <div className="flex justify-center mb-8">
-            <div className="bg-gray-700/95 backdrop-blur-sm rounded-lg p-6 text-center shadow-xl border-4 border-silver checkmate-announcement-silver">
-              <h2 className="text-3xl font-bold text-silver mb-4">🏆 CHECKMATE! 🏆</h2>
-              <p className="text-xl text-silver font-semibold">{gameResult}</p>
-              <div className="mt-4 text-sm text-gray-300">
-                Game completed in {gameState.moves.length} moves
+        <div className="space-y-6">
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20">
+            <h2 className="text-xl font-bold text-white mb-4">Game Status</h2>
+            <p className="text-white/90 mb-4">{getGameStatus()}</p>
+
+            {isOnlineGame && (
+              <div className="mb-4">
+                <p className="text-white/70">You are playing as: <span className="font-semibold text-white">{myColor}</span></p>
+                <p className="text-white/70">Game ID: <span className="font-mono text-white">{gameId}</span></p>
               </div>
-            </div>
-          </div>
-        )}
+            )}
 
-        {/* Checkmate Overlay for Chess Board */}
-        {gameState.isCheckmate && !gameResult && (
-          <div className="flex justify-center mb-8">
-            <div className="bg-gray-700/95 backdrop-blur-sm rounded-lg p-6 text-center shadow-xl border-4 border-silver checkmate-announcement-silver">
-              <h2 className="text-3xl font-bold text-silver mb-2">🏆 CHECKMATE! 🏆</h2>
-              <p className="text-xl text-silver font-semibold">
-                {gameState.currentPlayer === "white" ? "PlayerWhite" : "PlayerBlack"} wins!
-              </p>
-              <div className="mt-4 text-sm text-gray-300">
-                Game completed in {gameState.moves.length} moves
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Current Player Indicator */}
-        {!gameResult && !gameState.isCheckmate && (
-          <div className="flex justify-center mb-8">
-            <div className="current-player-indicator">
-              {gameState.currentPlayer === "white" ? (
-                "PlayerWhite's turn"
-              ) : botThinking ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin"></div>
-                  Bot is thinking...
-                </div>
-              ) : (
-                "PlayerBlack's turn"
-              )}
-              {mode === "online" && (
-                <div className="text-sm opacity-70 mt-1">
-                  {isMyTurn ? "Your turn" : "Waiting for opponent"}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Game Area - Responsive Layout */}
-        <div className="flex flex-col md:flex-row justify-center items-center gap-8">
-          {/* Chess Board */}
-          <div className="order-1">
-            <ChessBoard 
-              gameState={gameState} 
-              onGameStateChange={handleGameStateChange}
-              canMove={mode !== "online" || isMyTurn}
-            />
+            <Button 
+              onClick={resetGame}
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+              disabled={isOnlineGame} // Disable reset for online games
+            >
+              {isOnlineGame ? 'Online Game' : 'Reset Game'}
+            </Button>
           </div>
 
-          {/* Timers - Only show for PvP and Online modes, hidden for bot mode */}
-          {mode !== "bot" && (
-            <div className="order-2 md:order-3 flex flex-row md:flex-col gap-4 justify-center">
-              <GameTimer
-                time={gameState.blackTime}
-                isActive={gameState.currentPlayer === "black" && !gameState.isCheckmate}
-                onTimeUp={handleTimeUp}
-                label="PlayerBlack"
-              />
-              <GameTimer
-                time={gameState.whiteTime}
-                isActive={gameState.currentPlayer === "white" && !gameState.isCheckmate}
-                onTimeUp={handleTimeUp}
-                label="PlayerWhite"
-              />
-            </div>
-          )}
+          <GameTimer 
+            whiteTime={gameState.whiteTime}
+            blackTime={gameState.blackTime}
+            currentPlayer={gameState.currentPlayer}
+            isGameOver={gameState.isCheckmate}
+            onTimeUp={(player) => {
+              const winner = player === 'white' ? 'Black' : 'White'
+              alert(`Time's up! ${winner} wins!`)
+            }}
+          />
         </div>
-
-        {/* Game Info */}
-        {mode === "online" && gameId && (
-          <div className="text-center mt-8">
-            <p className={`text-lg ${getTextColor()}`}>
-              Game ID: <span className="font-bold">{gameId}</span>
-            </p>
-            <p className={`text-sm ${getTextColor()} opacity-70`}>
-              You are playing as {playerColor === "white" ? "White" : "Black"}
-            </p>
-          </div>
-        )}
       </div>
     </div>
   )

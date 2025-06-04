@@ -10,7 +10,7 @@ const firebaseConfig = {
   projectId: "nextchess-8ptau",
   storageBucket: "nextchess-8ptau.firebasestorage.app",
   messagingSenderId: "515641376103",
-  appId: "1:515641376103:web:YOUR_ACTUAL_WEB_APP_UNIQUE_HASH"
+  appId: "1:515641376103:web:b5bbfdb42d96f9173a43c2"
 };
 
 let app: FirebaseApp;
