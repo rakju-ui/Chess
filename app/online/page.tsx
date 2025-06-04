@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react"
@@ -9,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 export default function OnlineSetupPage() {
   const [gameId, setGameId] = useState("")
   const [isCreating, setIsCreating] = useState(false)
+  const [isJoining, setIsJoining] = useState(false)
   const router = useRouter()
 
   const createGame = async () => {
@@ -16,7 +18,7 @@ export default function OnlineSetupPage() {
     // Generate a random game ID
     const newGameId = Math.random().toString(36).substring(2, 8).toUpperCase()
 
-    // In a real implementation, you would create the game in Firebase here
+    // Navigate to the game as white player (creator)
     setTimeout(() => {
       router.push(`/play?mode=online&gameId=${newGameId}&color=white`)
     }, 1000)
@@ -24,7 +26,11 @@ export default function OnlineSetupPage() {
 
   const joinGame = () => {
     if (gameId.trim()) {
-      router.push(`/play?mode=online&gameId=${gameId.trim()}&color=black`)
+      setIsJoining(true)
+      // Navigate to the game as black player (joiner)
+      setTimeout(() => {
+        router.push(`/play?mode=online&gameId=${gameId.trim()}&color=black`)
+      }, 500)
     }
   }
 
@@ -39,26 +45,43 @@ export default function OnlineSetupPage() {
             <Button onClick={createGame} disabled={isCreating} className="w-full h-12 text-lg">
               {isCreating ? "Creating Game..." : "Create New Game"}
             </Button>
-
-            <div className="text-center text-gray-500">or</div>
-
-            <div className="space-y-2">
-              <Input
-                placeholder="Enter Game ID"
-                value={gameId}
-                onChange={(e) => setGameId(e.target.value.toUpperCase())}
-                className="text-center text-lg"
-                maxLength={6}
-              />
-              <Button onClick={joinGame} disabled={!gameId.trim()} variant="outline" className="w-full h-12 text-lg">
-                Join Game
+            
+            <div className="text-center text-gray-600">
+              Share the game ID with your opponent
+            </div>
+            
+            <div className="border-t pt-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Join Game with ID:</label>
+                <Input
+                  type="text"
+                  placeholder="Enter game ID"
+                  value={gameId}
+                  onChange={(e) => setGameId(e.target.value.toUpperCase())}
+                  className="text-center"
+                />
+              </div>
+              
+              <Button 
+                onClick={joinGame} 
+                disabled={!gameId.trim() || isJoining} 
+                className="w-full h-12 text-lg mt-4"
+                variant="outline"
+              >
+                {isJoining ? "Joining Game..." : "Join Game"}
               </Button>
             </div>
           </div>
-
-          <Button onClick={() => router.push("/modes")} variant="ghost" className="w-full">
-            Back to Modes
-          </Button>
+          
+          <div className="text-center">
+            <Button 
+              onClick={() => router.push("/modes")} 
+              variant="ghost"
+              className="text-gray-600 hover:text-gray-800"
+            >
+              ← Back to Game Modes
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
