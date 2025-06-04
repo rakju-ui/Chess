@@ -18,6 +18,7 @@ const config: Config = {
   			'safe-bottom': 'env(safe-area-inset-bottom)',
   		},
   		colors: {
+  			silver: '#C0C0C0',
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {

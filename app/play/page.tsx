@@ -217,10 +217,10 @@ export default function PlayPage() {
         {/* Game Result - Enhanced for all modes */}
         {gameResult && (
           <div className="flex justify-center mb-8">
-            <div className="bg-white/90 backdrop-blur-sm rounded-lg p-6 text-center shadow-xl border-4 border-red-500 checkmate-announcement">
-              <h2 className="text-3xl font-bold text-red-600 mb-4">🏆 CHECKMATE! 🏆</h2>
-              <p className="text-xl text-gray-800 font-semibold">{gameResult}</p>
-              <div className="mt-4 text-sm text-gray-600">
+            <div className="bg-black/95 backdrop-blur-sm rounded-lg p-6 text-center shadow-xl border-4 border-silver checkmate-announcement-silver">
+              <h2 className="text-3xl font-bold text-silver mb-4">🏆 CHECKMATE! 🏆</h2>
+              <p className="text-xl text-silver font-semibold">{gameResult}</p>
+              <div className="mt-4 text-sm text-gray-300">
                 Game completed in {gameState.moves.length} moves
               </div>
             </div>
@@ -230,12 +230,12 @@ export default function PlayPage() {
         {/* Checkmate Overlay for Chess Board */}
         {gameState.isCheckmate && !gameResult && (
           <div className="flex justify-center mb-8">
-            <div className="bg-red-100/95 backdrop-blur-sm rounded-lg p-6 text-center shadow-xl border-4 border-red-500 checkmate-announcement">
-              <h2 className="text-3xl font-bold text-red-600 mb-2">🏆 CHECKMATE! 🏆</h2>
-              <p className="text-xl text-gray-800 font-semibold">
+            <div className="bg-black/95 backdrop-blur-sm rounded-lg p-6 text-center shadow-xl border-4 border-silver checkmate-announcement-silver">
+              <h2 className="text-3xl font-bold text-silver mb-2">🏆 CHECKMATE! 🏆</h2>
+              <p className="text-xl text-silver font-semibold">
                 {gameState.currentPlayer === "white" ? "PlayerWhite" : "PlayerBlack"} wins!
               </p>
-              <div className="mt-4 text-sm text-gray-600">
+              <div className="mt-4 text-sm text-gray-300">
                 Game completed in {gameState.moves.length} moves
               </div>
             </div>
