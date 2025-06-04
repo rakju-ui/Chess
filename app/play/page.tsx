@@ -7,7 +7,6 @@ import ChessBoard from "@/components/chess-board"
 import GameTimer from "@/components/game-timer"
 import ThemeSwitcher from "@/components/theme-switcher"
 import { useTheme } from "@/lib/theme-context"
-import { updateLocalRoom, subscribeToLocalRoom, getLocalRoom, joinLocalRoom } from "@/lib/local-multiplayer"
 import type { GameState } from "@/lib/types"
 import { createInitialGameState, makeMove, getGameResult } from "@/lib/chess-logic"
 import { getBestMove, getSmartRandomMove } from "@/lib/chess-engine"
@@ -18,68 +17,26 @@ export default function PlayPage() {
   const { theme } = useTheme()
   const mode = searchParams.get("mode") || "pvp"
   const gameId = searchParams.get("gameId")
-  const roomCode = searchParams.get("roomCode")
-  const playerColor = searchParams.get("color") as "white" | "black" | null
+  const playerColor = searchParams.get("color")
 
   const urlDifficulty = searchParams.get("difficulty") as "easy" | "medium" | "hard" | null
 
-  const [countdown, setCountdown] = useState(3)
+  const [countdown, setCountdown] = useState(5)
   const [gameStarted, setGameStarted] = useState(false)
-  const [gameState, setGameState] = useState<GameState>(createInitialGameState(mode as "pvp" | "bot" | "online"))
+  const [gameState, setGameState] = useState<GameState>(() => createInitialGameState(mode as "pvp" | "bot" | "online"))
   const [gameResult, setGameResult] = useState<string | null>(null)
   const [botDifficulty, setBotDifficulty] = useState<"easy" | "medium" | "hard">(urlDifficulty || "medium")
   const [botThinking, setBotThinking] = useState(false)
-  const [waitingForPlayer, setWaitingForPlayer] = useState(false)
 
   // Countdown timer
   useEffect(() => {
-    if (mode === "local-multiplayer" && roomCode) {
-      const room = getLocalRoom(roomCode)
-      if (room) {
-        if (playerColor === "black") {
-          joinLocalRoom(roomCode, "black")
-        }
-
-        // Check if both players are ready
-        if (room.playerWhite && room.playerBlack) {
-          setWaitingForPlayer(false)
-          if (room.gameState) {
-            setGameState(room.gameState)
-          }
-        } else {
-          setWaitingForPlayer(true)
-        }
-
-        // Subscribe to room updates
-        const unsubscribe = subscribeToLocalRoom(roomCode, (updatedRoom) => {
-          if (updatedRoom.playerWhite && updatedRoom.playerBlack) {
-            setWaitingForPlayer(false)
-            if (updatedRoom.gameState && updatedRoom.gameState !== gameState) {
-              setGameState(updatedRoom.gameState)
-            }
-          }
-        })
-
-        return unsubscribe
-      }
-    }
-  }, [mode, roomCode, playerColor])
-
-  useEffect(() => {
-    if (mode !== "local-multiplayer" || !waitingForPlayer) {
-      const timer = setTimeout(() => {
-        setCountdown(prev => {
-          if (prev <= 1) {
-            setGameStarted(true)
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
-
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
       return () => clearTimeout(timer)
+    } else {
+      setGameStarted(true)
     }
-  }, [countdown, mode, waitingForPlayer])
+  }, [countdown])
 
   // Timer system - only runs for PvP and Online modes, not for bot mode
   useEffect(() => {

@@ -22,7 +22,7 @@ export function createInitialBoard(): (ChessPiece | null)[][] {
   return board
 }
 
-export function createInitialGameState(gameMode: "pvp" | "bot" | "online" | "local-multiplayer" = "pvp"): GameState {
+export function createInitialGameState(gameMode: "pvp" | "bot" | "online" = "pvp"): GameState {
   return {
     board: createInitialBoard(),
     currentPlayer: "white",
