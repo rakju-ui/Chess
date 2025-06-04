@@ -82,7 +82,9 @@ export default function ChessBoard({ gameState, onGameStateChange, onMove }: Che
             <div
               key={`${rowIndex}-${colIndex}`}
               className={`w-[50px] h-[50px] flex items-center justify-center cursor-pointer relative transition-colors duration-200 ${
-                gameState.isCheckmate ? "cursor-not-allowed opacity-75" : ""
+                gameState.isCheckmate ? "cursor-not-allowed" : ""
+              } ${
+                gameState.isCheckmate && piece && piece.color !== gameState.currentPlayer ? "bg-green-200 animate-pulse" : ""
               }`}
               style={{ backgroundColor: getSquareColor(rowIndex, colIndex) }}
               onClick={() => handleSquareClick(rowIndex, colIndex)}
@@ -93,16 +95,7 @@ export default function ChessBoard({ gameState, onGameStateChange, onMove }: Che
         )}
       </div>
 
-      {gameState.isCheckmate && (
-        <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
-          <div className="bg-white/90 backdrop-blur-sm rounded-lg p-6 text-center shadow-xl">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Game Over!</h2>
-            <p className="text-lg text-gray-600">
-              {gameState.currentPlayer === "white" ? "PlayerWhite" : "PlayerBlack"} wins!
-            </p>
-          </div>
-        </div>
-      )}
+      
     </div>
   )
 }

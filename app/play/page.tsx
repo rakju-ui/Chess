@@ -214,18 +214,36 @@ export default function PlayPage() {
           </div>
         </div>
 
-        {/* Game Result */}
+        {/* Game Result - Enhanced for all modes */}
         {gameResult && (
           <div className="flex justify-center mb-8">
-            <div className="bg-white/90 backdrop-blur-sm rounded-lg p-6 text-center shadow-xl">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">Game Over!</h2>
-              <p className="text-lg text-gray-600">{gameResult}</p>
+            <div className="bg-white/90 backdrop-blur-sm rounded-lg p-6 text-center shadow-xl border-4 border-red-500 checkmate-announcement">
+              <h2 className="text-3xl font-bold text-red-600 mb-4">🏆 CHECKMATE! 🏆</h2>
+              <p className="text-xl text-gray-800 font-semibold">{gameResult}</p>
+              <div className="mt-4 text-sm text-gray-600">
+                Game completed in {gameState.moves.length} moves
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Checkmate Overlay for Chess Board */}
+        {gameState.isCheckmate && !gameResult && (
+          <div className="flex justify-center mb-8">
+            <div className="bg-red-100/95 backdrop-blur-sm rounded-lg p-6 text-center shadow-xl border-4 border-red-500 checkmate-announcement">
+              <h2 className="text-3xl font-bold text-red-600 mb-2">🏆 CHECKMATE! 🏆</h2>
+              <p className="text-xl text-gray-800 font-semibold">
+                {gameState.currentPlayer === "white" ? "PlayerWhite" : "PlayerBlack"} wins!
+              </p>
+              <div className="mt-4 text-sm text-gray-600">
+                Game completed in {gameState.moves.length} moves
+              </div>
             </div>
           </div>
         )}
 
         {/* Current Player Indicator */}
-        {!gameResult && (
+        {!gameResult && !gameState.isCheckmate && (
           <div className="flex justify-center mb-8">
             <div className="current-player-indicator">
               {gameState.currentPlayer === "white" ? (
