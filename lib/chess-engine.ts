@@ -241,6 +241,14 @@ export function getBestMove(gameState: GameState, difficulty: "easy" | "medium" 
     const from = `${String.fromCharCode(97 + result.move.from.col)}${8 - result.move.from.row}`
     const to = `${String.fromCharCode(97 + result.move.to.col)}${8 - result.move.to.row}`
     console.log(`🤖 Playing: ${from} → ${to}`)
+    
+    // For bot pawn promotion, always choose queen (strongest piece)
+    if (result.move.piece.type === "pawn") {
+      const promotionRow = result.move.piece.color === "white" ? 0 : 7
+      if (result.move.to.row === promotionRow) {
+        result.move.promotion = "queen"
+      }
+    }
   }
 
   return result.move

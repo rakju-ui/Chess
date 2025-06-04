@@ -1,10 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import type { GameState, Position } from "@/lib/types"
-import { makeMove, isValidMove } from "@/lib/chess-logic"
+import type { GameState, Position, PieceType } from "@/lib/types"
+import { makeMove, isValidMove, isPawnPromotion } from "@/lib/chess-logic"
 import { useTheme } from "@/lib/theme-context"
 import ChessPieceComponent from "./chess-piece"
+import PawnPromotionModal from "./pawn-promotion-modal"
 
 interface ChessBoardProps {
   gameState: GameState
@@ -15,6 +16,7 @@ interface ChessBoardProps {
 export default function ChessBoard({ gameState, onGameStateChange, onMove }: ChessBoardProps) {
   const [selectedSquare, setSelectedSquare] = useState<Position | null>(null)
   const [validMoves, setValidMoves] = useState<Position[]>([])
+  const [pendingPromotion, setPendingPromotion] = useState<{ from: Position; to: Position } | null>(null)
   const { colors } = useTheme()
 
   const handleSquareClick = (row: number, col: number) => {
@@ -27,10 +29,15 @@ export default function ChessBoard({ gameState, onGameStateChange, onMove }: Che
     if (selectedSquare) {
       // Try to make a move
       if (validMoves.some((move) => move.row === row && move.col === col)) {
-        const newGameState = makeMove(gameState, selectedSquare, position)
-        if (newGameState) {
-          onGameStateChange(newGameState)
-          onMove?.(selectedSquare, position)
+        // Check if this is a pawn promotion
+        if (isPawnPromotion(gameState.board, selectedSquare, position)) {
+          setPendingPromotion({ from: selectedSquare, to: position })
+        } else {
+          const newGameState = makeMove(gameState, selectedSquare, position)
+          if (newGameState) {
+            onGameStateChange(newGameState)
+            onMove?.(selectedSquare, position)
+          }
         }
       }
       setSelectedSquare(null)
@@ -49,6 +56,17 @@ export default function ChessBoard({ gameState, onGameStateChange, onMove }: Che
         }
       }
       setValidMoves(moves)
+    }
+  }
+
+  const handlePromotion = (pieceType: PieceType) => {
+    if (pendingPromotion) {
+      const newGameState = makeMove(gameState, pendingPromotion.from, pendingPromotion.to, pieceType)
+      if (newGameState) {
+        onGameStateChange(newGameState)
+        onMove?.(pendingPromotion.from, pendingPromotion.to)
+      }
+      setPendingPromotion(null)
     }
   }
 
@@ -99,7 +117,11 @@ export default function ChessBoard({ gameState, onGameStateChange, onMove }: Che
         )}
       </div>
 
-      
+      <PawnPromotionModal
+        isOpen={!!pendingPromotion}
+        color={gameState.currentPlayer}
+        onPromotion={handlePromotion}
+      />
     </div>
   )
 }

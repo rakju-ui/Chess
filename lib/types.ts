@@ -16,6 +16,7 @@ export interface Move {
   to: Position
   piece: ChessPiece
   capturedPiece?: ChessPiece
+  promotion?: PieceType
   isCheck?: boolean
   isCheckmate?: boolean
   notation?: string

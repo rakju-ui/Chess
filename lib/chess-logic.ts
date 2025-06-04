@@ -144,7 +144,7 @@ function isPathClear(board: (ChessPiece | null)[][], from: Position, to: Positio
   return true
 }
 
-export function makeMove(gameState: GameState, from: Position, to: Position): GameState | null {
+export function makeMove(gameState: GameState, from: Position, to: Position, promotion?: PieceType): GameState | null {
   if (!isValidMove(gameState.board, from, to)) return null
 
   const newBoard = gameState.board.map((row) => [...row])
@@ -154,7 +154,22 @@ export function makeMove(gameState: GameState, from: Position, to: Position): Ga
   // Check if king is being captured (immediate checkmate)
   const isKingCaptured = capturedPiece && capturedPiece.type === "king"
 
-  newBoard[to.row][to.col] = piece
+  // Handle pawn promotion
+  if (piece && piece.type === "pawn") {
+    const promotionRow = piece.color === "white" ? 0 : 7
+    if (to.row === promotionRow) {
+      if (!promotion) {
+        // Promotion is required but not provided
+        return null
+      }
+      newBoard[to.row][to.col] = { type: promotion, color: piece.color }
+    } else {
+      newBoard[to.row][to.col] = piece
+    }
+  } else {
+    newBoard[to.row][to.col] = piece
+  }
+  
   newBoard[from.row][from.col] = null
 
   const move: Move = {
@@ -162,6 +177,7 @@ export function makeMove(gameState: GameState, from: Position, to: Position): Ga
     to,
     piece: piece!,
     capturedPiece: capturedPiece || undefined,
+    promotion,
   }
 
   const nextPlayer = gameState.currentPlayer === "white" ? "black" : "white"
@@ -178,6 +194,14 @@ export function makeMove(gameState: GameState, from: Position, to: Position): Ga
     isCheck,
     isCheckmate,
   }
+}
+
+export function isPawnPromotion(board: (ChessPiece | null)[][], from: Position, to: Position): boolean {
+  const piece = board[from.row][from.col]
+  if (!piece || piece.type !== "pawn") return false
+  
+  const promotionRow = piece.color === "white" ? 0 : 7
+  return to.row === promotionRow
 }
 
 export function isInCheck(board: (ChessPiece | null)[][], color: PieceColor): boolean {
@@ -274,12 +298,37 @@ export function getAllValidMoves(board: (ChessPiece | null)[][], color: PieceCol
             const from = { row: fromRow, col: fromCol }
             const to = { row: toRow, col: toCol }
             if (isValidMove(board, from, to)) {
-              moves.push({
-                from,
-                to,
-                piece,
-                capturedPiece: board[toRow][toCol] || undefined,
-              })
+              // Check for pawn promotion
+              if (piece.type === "pawn") {
+                const promotionRow = piece.color === "white" ? 0 : 7
+                if (to.row === promotionRow) {
+                  // Generate moves for all promotion options
+                  const promotionOptions: PieceType[] = ["queen", "rook", "bishop", "knight"]
+                  for (const promotion of promotionOptions) {
+                    moves.push({
+                      from,
+                      to,
+                      piece,
+                      capturedPiece: board[toRow][toCol] || undefined,
+                      promotion,
+                    })
+                  }
+                } else {
+                  moves.push({
+                    from,
+                    to,
+                    piece,
+                    capturedPiece: board[toRow][toCol] || undefined,
+                  })
+                }
+              } else {
+                moves.push({
+                  from,
+                  to,
+                  piece,
+                  capturedPiece: board[toRow][toCol] || undefined,
+                })
+              }
             }
           }
         }
