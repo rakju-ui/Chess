@@ -92,7 +92,7 @@ export default function ChessBoard({ gameState, onGameStateChange, onMove }: Che
     }
 
     if (isValidMoveSquare(row, col)) {
-      return `${colors.highlight}80` // Semi-transparent highlight
+      return "transparent" // Will use CSS gradient overlay
     }
 
     return isLight ? colors.lightSquare : colors.darkSquare
@@ -111,6 +111,9 @@ export default function ChessBoard({ gameState, onGameStateChange, onMove }: Che
               style={{ backgroundColor: getSquareColor(rowIndex, colIndex) }}
               onClick={() => handleSquareClick(rowIndex, colIndex)}
             >
+              {isValidMoveSquare(rowIndex, colIndex) && (
+                <div className="absolute inset-0 bg-gradient-radial from-blue-200/60 via-blue-100/40 to-transparent pointer-events-none" />
+              )}
               {piece && <ChessPieceComponent piece={piece} size={36} />}
             </div>
           )),
