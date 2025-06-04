@@ -217,7 +217,7 @@ export default function PlayPage() {
         {/* Game Result - Enhanced for all modes */}
         {gameResult && (
           <div className="flex justify-center mb-8">
-            <div className="bg-black/95 backdrop-blur-sm rounded-lg p-6 text-center shadow-xl border-4 border-silver checkmate-announcement-silver">
+            <div className="bg-gray-700/95 backdrop-blur-sm rounded-lg p-6 text-center shadow-xl border-4 border-silver checkmate-announcement-silver">
               <h2 className="text-3xl font-bold text-silver mb-4">🏆 CHECKMATE! 🏆</h2>
               <p className="text-xl text-silver font-semibold">{gameResult}</p>
               <div className="mt-4 text-sm text-gray-300">
@@ -230,7 +230,7 @@ export default function PlayPage() {
         {/* Checkmate Overlay for Chess Board */}
         {gameState.isCheckmate && !gameResult && (
           <div className="flex justify-center mb-8">
-            <div className="bg-black/95 backdrop-blur-sm rounded-lg p-6 text-center shadow-xl border-4 border-silver checkmate-announcement-silver">
+            <div className="bg-gray-700/95 backdrop-blur-sm rounded-lg p-6 text-center shadow-xl border-4 border-silver checkmate-announcement-silver">
               <h2 className="text-3xl font-bold text-silver mb-2">🏆 CHECKMATE! 🏆</h2>
               <p className="text-xl text-silver font-semibold">
                 {gameState.currentPlayer === "white" ? "PlayerWhite" : "PlayerBlack"} wins!

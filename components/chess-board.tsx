@@ -89,8 +89,6 @@ export default function ChessBoard({ gameState, onGameStateChange, onMove }: Che
               key={`${rowIndex}-${colIndex}`}
               className={`w-[50px] h-[50px] flex items-center justify-center cursor-pointer relative transition-colors duration-200 ${
                 gameState.isCheckmate ? "cursor-not-allowed" : ""
-              } ${
-                gameState.isCheckmate && piece && piece.color !== gameState.currentPlayer ? "bg-green-200 animate-pulse" : ""
               }`}
               style={{ backgroundColor: getSquareColor(rowIndex, colIndex) }}
               onClick={() => handleSquareClick(rowIndex, colIndex)}
