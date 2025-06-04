@@ -62,6 +62,12 @@ export default function ChessBoard({ gameState, onGameStateChange, onMove }: Che
 
   const getSquareColor = (row: number, col: number) => {
     const isLight = (row + col) % 2 === 0
+    const piece = gameState.board[row][col]
+
+    // Highlight king in red if in check
+    if (piece && piece.type === "king" && piece.color === gameState.currentPlayer && gameState.isCheck) {
+      return colors.check
+    }
 
     if (isSquareSelected(row, col)) {
       return colors.highlight

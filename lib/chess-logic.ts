@@ -151,7 +151,7 @@ export function makeMove(gameState: GameState, from: Position, to: Position): Ga
   const piece = newBoard[from.row][from.col]
   const capturedPiece = newBoard[to.row][to.col]
 
-  // Check if king is being captured
+  // Check if king is being captured (immediate checkmate)
   const isKingCaptured = capturedPiece && capturedPiece.type === "king"
 
   newBoard[to.row][to.col] = piece
@@ -168,7 +168,7 @@ export function makeMove(gameState: GameState, from: Position, to: Position): Ga
 
   // Check for check and checkmate
   const isCheck = isInCheck(newBoard, nextPlayer)
-  const isCheckmate = isKingCaptured || (isCheck && isInCheckmate(newBoard, nextPlayer))
+  const isCheckmate = isKingCaptured || isInCheckmate(newBoard, nextPlayer)
 
   return {
     ...gameState,
@@ -182,13 +182,15 @@ export function makeMove(gameState: GameState, from: Position, to: Position): Ga
 
 export function isInCheck(board: (ChessPiece | null)[][], color: PieceColor): boolean {
   const kingPosition = findKing(board, color)
-  if (!kingPosition) return false
+  if (!kingPosition) return true // If no king, consider it in check
 
+  // Check if any enemy piece can attack the king
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
       const piece = board[row][col]
       if (piece && piece.color !== color) {
         if (isValidMove(board, { row, col }, kingPosition)) {
+          console.log(`🔍 King in check: ${piece.type} at ${row},${col} can capture king at ${kingPosition.row},${kingPosition.col}`)
           return true
         }
       }
@@ -199,10 +201,23 @@ export function isInCheck(board: (ChessPiece | null)[][], color: PieceColor): bo
 }
 
 function isInCheckmate(board: (ChessPiece | null)[][], color: PieceColor): boolean {
+  // First, the king must be in check for it to be checkmate
+  if (!isInCheck(board, color)) {
+    console.log(`🔍 ${color} king is not in check, so not checkmate`)
+    return false
+  }
+
   // If king is missing, it's checkmate
-  if (!findKing(board, color)) return true
+  const kingPos = findKing(board, color)
+  if (!kingPos) {
+    console.log(`🏆 ${color} king is missing - checkmate!`)
+    return true
+  }
+
+  console.log(`🔍 Checking if ${color} king at ${kingPos.row},${kingPos.col} is in checkmate...`)
 
   // Check if any move can get out of check
+  let validMovesFound = 0
   for (let fromRow = 0; fromRow < 8; fromRow++) {
     for (let fromCol = 0; fromCol < 8; fromCol++) {
       const piece = board[fromRow][fromCol]
@@ -213,6 +228,7 @@ function isInCheckmate(board: (ChessPiece | null)[][], color: PieceColor): boole
             const to = { row: toRow, col: toCol }
 
             if (isValidMove(board, from, to)) {
+              validMovesFound++
               // Simulate the move
               const testBoard = board.map((row) => [...row])
               testBoard[toRow][toCol] = testBoard[fromRow][fromCol]
@@ -220,6 +236,7 @@ function isInCheckmate(board: (ChessPiece | null)[][], color: PieceColor): boole
 
               // If this move gets out of check, it's not checkmate
               if (!isInCheck(testBoard, color)) {
+                console.log(`🔍 ${color} can escape check by moving ${piece.type} from ${fromRow},${fromCol} to ${toRow},${toCol}`)
                 return false
               }
             }
@@ -229,6 +246,7 @@ function isInCheckmate(board: (ChessPiece | null)[][], color: PieceColor): boole
     }
   }
 
+  console.log(`🏆 CHECKMATE! ${color} king has no escape moves (checked ${validMovesFound} possible moves)`)
   return true
 }
 
