@@ -12,7 +12,7 @@ import {
 import type { GameState, Move, Position } from './types'
 
 export interface FirebaseGameState {
-  board: (any | null)[][]
+  board: string // Store as JSON string instead of 2D array
   currentPlayer: 'white' | 'black'
   moves: Move[]
   isCheck: boolean
@@ -33,8 +33,15 @@ export interface FirebaseGameState {
 export async function createFirebaseGame(gameId: string, initialGameState: GameState): Promise<void> {
   const gameRef = doc(db, 'games', gameId)
   
-  const firebaseGameState: FirebaseGameState = {
-    ...initialGameState,
+  const firebaseGameState = {
+    board: JSON.stringify(initialGameState.board), // Serialize the 2D array
+    currentPlayer: initialGameState.currentPlayer,
+    moves: initialGameState.moves,
+    isCheck: initialGameState.isCheck,
+    isCheckmate: initialGameState.isCheckmate,
+    whiteTime: initialGameState.whiteTime,
+    blackTime: initialGameState.blackTime,
+    gameMode: initialGameState.gameMode,
     players: { white: 'creator' },
     createdAt: Timestamp.now(),
     lastMoveAt: Timestamp.now()
@@ -52,14 +59,20 @@ export async function joinFirebaseGame(gameId: string, playerColor: 'white' | 'b
     return null
   }
   
-  const gameData = gameSnap.data() as FirebaseGameState
+  const gameData = gameSnap.data()
   
   // Update player info
   await updateDoc(gameRef, {
     [`players.${playerColor}`]: 'joined'
   })
   
-  return gameData as GameState
+  // Parse the serialized board data
+  const gameState: GameState = {
+    ...gameData,
+    board: JSON.parse(gameData.board), // Deserialize the board
+  } as GameState
+  
+  return gameState
 }
 
 // Update game state in Firebase
@@ -67,7 +80,7 @@ export async function updateFirebaseGame(gameId: string, gameState: GameState): 
   const gameRef = doc(db, 'games', gameId)
   
   await updateDoc(gameRef, {
-    board: gameState.board,
+    board: JSON.stringify(gameState.board), // Serialize the 2D array
     currentPlayer: gameState.currentPlayer,
     moves: gameState.moves,
     isCheck: gameState.isCheck,
@@ -84,8 +97,13 @@ export function subscribeToGame(gameId: string, callback: (gameState: GameState)
   
   return onSnapshot(gameRef, (doc) => {
     if (doc.exists()) {
-      const data = doc.data() as FirebaseGameState
-      callback(data as GameState)
+      const data = doc.data()
+      // Parse the serialized board data
+      const gameState: GameState = {
+        ...data,
+        board: JSON.parse(data.board), // Deserialize the board
+      } as GameState
+      callback(gameState)
     }
   })
 }
