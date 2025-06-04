@@ -5,7 +5,11 @@ let socket: Socket | null = null;
 
 export const initSocket = () => {
   if (!socket) {
-    socket = io(process.env.NODE_ENV === 'production' ? 'wss://your-repl-url.replit.dev' : 'ws://localhost:5000');
+    // Use the current domain with the server port for Replit
+    const serverUrl = typeof window !== 'undefined' 
+      ? `${window.location.protocol}//${window.location.hostname}:5000`
+      : 'http://localhost:5000';
+    socket = io(serverUrl);
   }
   return socket;
 };
