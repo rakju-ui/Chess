@@ -29,7 +29,7 @@ export interface GameState {
   isCheckmate: boolean
   whiteTime: number
   blackTime: number
-  gameMode: "pvp" | "bot" | "online"
+  gameMode: "pvp" | "bot" | "online" | "local-multiplayer"
   gameId?: string
 }
 

@@ -8,6 +8,8 @@ export default function ModesPage() {
   const handleGameMode = (mode: string) => {
     if (mode === "online") {
       router.push("/online")
+    } else if (mode === "local-multiplayer") {
+      router.push("/local-multiplayer")
     } else if (mode === "bot") {
       router.push("/bot")
     } else {
@@ -32,6 +34,13 @@ export default function ModesPage() {
           className="h-16 text-xl font-semibold bg-gray-800/90 hover:bg-gray-700/90 text-white border-2 border-gray-600/80 backdrop-blur-sm transition-all duration-200 shadow-lg rounded-md cursor-pointer"
         >
           Player (White) vs Bot
+        </button>
+
+        <button
+          onClick={() => handleGameMode("local-multiplayer")}
+          className="h-16 text-xl font-semibold bg-gray-800/90 hover:bg-gray-700/90 text-white border-2 border-gray-600/80 backdrop-blur-sm transition-all duration-200 shadow-lg rounded-md cursor-pointer"
+        >
+          Local Multiplayer
         </button>
 
         <button
