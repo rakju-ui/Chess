@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
@@ -10,6 +11,12 @@ import { useTheme } from "@/lib/theme-context"
 import type { GameState } from "@/lib/types"
 import { createInitialGameState, makeMove, getGameResult } from "@/lib/chess-logic"
 import { getBestMove, getSmartRandomMove } from "@/lib/chess-engine"
+import { 
+  createFirebaseGame, 
+  joinFirebaseGame, 
+  updateFirebaseGame, 
+  subscribeToGameUpdates 
+} from "@/lib/firebase-game"
 
 export default function PlayPage() {
   const router = useRouter()
@@ -17,7 +24,7 @@ export default function PlayPage() {
   const { theme } = useTheme()
   const mode = searchParams.get("mode") || "pvp"
   const gameId = searchParams.get("gameId")
-  const playerColor = searchParams.get("color")
+  const playerColor = searchParams.get("color") as "white" | "black" | null
 
   const urlDifficulty = searchParams.get("difficulty") as "easy" | "medium" | "hard" | null
 
@@ -27,6 +34,45 @@ export default function PlayPage() {
   const [gameResult, setGameResult] = useState<string | null>(null)
   const [botDifficulty, setBotDifficulty] = useState<"easy" | "medium" | "hard">(urlDifficulty || "medium")
   const [botThinking, setBotThinking] = useState(false)
+  const [isMyTurn, setIsMyTurn] = useState(true)
+
+  // Initialize online game
+  useEffect(() => {
+    if (mode === "online" && gameId && gameStarted) {
+      const initializeOnlineGame = async () => {
+        try {
+          if (playerColor === "white") {
+            // Create game as white player
+            await createFirebaseGame(gameId, gameState)
+            console.log("Game created:", gameId)
+          } else if (playerColor === "black") {
+            // Join game as black player
+            const existingGame = await joinFirebaseGame(gameId, "black")
+            if (existingGame) {
+              setGameState(existingGame)
+              console.log("Joined game:", gameId)
+            }
+          }
+
+          // Subscribe to game updates
+          const unsubscribe = subscribeToGameUpdates(gameId, (updatedGameState) => {
+            setGameState(updatedGameState)
+            // Update turn indicator
+            setIsMyTurn(
+              (playerColor === "white" && updatedGameState.currentPlayer === "white") ||
+              (playerColor === "black" && updatedGameState.currentPlayer === "black")
+            )
+          })
+
+          return () => unsubscribe()
+        } catch (error) {
+          console.error("Error setting up online game:", error)
+        }
+      }
+
+      initializeOnlineGame()
+    }
+  }, [mode, gameId, playerColor, gameStarted])
 
   // Countdown timer
   useEffect(() => {
@@ -127,11 +173,23 @@ export default function PlayPage() {
     }
   }, [gameStarted, mode, gameState.currentPlayer, gameState.isCheckmate, makeBotMove, botThinking])
 
-  const handleGameStateChange = (newGameState: GameState) => {
+  const handleGameStateChange = async (newGameState: GameState) => {
+    // For online mode, check if it's player's turn
+    if (mode === "online" && !isMyTurn) {
+      console.log("Not your turn!")
+      return
+    }
+
     setGameState(newGameState)
 
+    // Sync to Firebase for online games
     if (mode === "online" && gameId) {
-      console.log("Syncing game state to Firebase:", gameId)
+      try {
+        await updateFirebaseGame(gameId, newGameState)
+        console.log("Game state synced to Firebase")
+      } catch (error) {
+        console.error("Error updating Firebase game:", error)
+      }
     }
   }
 
@@ -246,7 +304,13 @@ export default function PlayPage() {
         {!gameResult && !gameState.isCheckmate && (
           <div className="flex justify-center mb-8">
             <div className="current-player-indicator">
-              {gameState.currentPlayer === "white" ? (
+              {mode === "online" ? (
+                isMyTurn ? (
+                  `Your turn (${playerColor})`
+                ) : (
+                  `Opponent's turn`
+                )
+              ) : gameState.currentPlayer === "white" ? (
                 "PlayerWhite's turn"
               ) : botThinking ? (
                 <div className="flex items-center gap-2">
